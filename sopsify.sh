@@ -28,15 +28,15 @@ flux_secret_name=${2:-"sops-gpg"}
 # Extract fingerprint fom local .sops.pub.asc file
 local_pubkeyfile_fp=$(gpg --batch --with-fingerprint --with-colons ".sops.pub.asc" 2>/dev/null | awk -F: '$1 == "fpr" {print $10}')
 
-## Получить список всех ключей в keyring
+## Get keyring keys
 key_ids=$(gpg --list-keys --with-colons | awk -F: '/^pub:/ {print $5}')
 
-# Перебор ключей и вывод информации только для ключей, соответствующих условию
+# Enumerate keys and pick only matching
 for key_id in $key_ids; do
     fingerprint=$(gpg --fingerprint --with-colons "$key_id" | awk -F: '/^fpr:/ {print $10}' | head -n 1)
     uid=$(gpg --list-keys --with-colons "$key_id" | awk -F: '/^uid:/ {print $10}')
     
-    # Проверка условия и вывод информации только для подходящих ключей
+    # Check key match
     if [[ "$uid" == "$flux_secret_name" || "$uid" == "$flux_secret_name "* ]] && [[ "$fingerprint" != "$local_pubkeyfile_fp" ]]; then
         # echo "Key ID: $key_id, Fingerprint: $fingerprint, UID: $uid"
         gpg --delete-keys $fingerprint
